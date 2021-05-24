@@ -97,32 +97,45 @@ class APAnalyzer:
         amplitude = []
         time = []
         if len(segments) == 1:
-            ap_time = segments.index[0]
-            ind = np.where(trace.index == ap_time)[0][0]
-            trace_ = trace.iloc[ind:ind+2]
-            amplitude.append(trace_.max())
-            time.append(trace_.idxmax())
+            # Find the time when rate first crosses zero
+            # after the segment identified
+            segment_end = segments.index[-1]
+            ap_time = rate[(rate.index > segment_end) & 
+                           (rate < 0)].index[0]
+            time.append(ap_time)
+            amplitude.append(trace[ap_time])
+
         if len(segments) > 1:
             all_ind = [np.where(trace.index == i)[0][0] for i in segments.index]
             for i in range(1, len(segments)):
                 if all_ind[i] != all_ind[i-1]+1:
-                    ind = all_ind[i-1]
+                    segment_end = trace.index[all_ind[i-1]]
                 elif i == len(segments)-1:
-                    ind = all_ind[-1]
+                    segment_end = trace.index[all_ind[-1]]
                 else:
                     continue
-                trace_ = trace.iloc[ind:ind+2]
-                amplitude.append(trace_.max())
-                time.append(trace_.idxmax())
+                ap_time = rate[(rate.index > segment_end) & 
+                               (rate < 0)].index[0]
+                time.append(ap_time)
+                amplitude.append(trace[ap_time])
         return pd.Series(data=amplitude, index=time)
 
     def find_rheobase(self):
         for sweep in self.sweep_list:
             aps = self.find_ap(sweep)
             if len(aps) > 0:
-                return self.measure_current(sweep)
+                return sweep, self.measure_current(sweep)
             else:
                 continue
+                
+    def find_threshold(
+        self,
+        sweep
+    ):
+        trace = self.get_trace(sweep)
+        rate = self.get_rate(sweep)
+        threshold = trace[rate >= self.rate_threshold].values[0]
+        return threshold
 
     def find_current_step(
         self,
