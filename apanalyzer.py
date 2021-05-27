@@ -128,14 +128,37 @@ class APAnalyzer:
             else:
                 continue
                 
-    def find_threshold(
+    def find_ap_threshold(
         self,
         sweep
     ):
         trace = self.get_trace(sweep)
         rate = self.get_rate(sweep)
-        threshold = trace[rate >= self.rate_threshold].values[0]
-        return threshold
+        trace_ = trace[rate >= self.rate_threshold]
+        if len(trace_) == 0:
+            raise ValueError("No action potential found. Please choose a different sweep.")
+        else:
+            ap_threshold = trace_.values[0]
+            return ap_threshold
+    
+    def find_half_width(
+        self,
+        sweep
+    ):
+        trace = self.get_trace(sweep)
+        rate = self.get_rate(sweep)
+        ap_threshold = self.find_ap_threshold(sweep)
+        aps = self.find_ap(sweep)
+        # Difference between the first action potential
+        # maplitude and threshold
+        half_way = 0.5*(aps.iloc[0]+ap_threshold)
+        # Find start and end of half-width duration
+        start = trace[(rate >= self.rate_threshold) &
+                      (trace >= half_way)].index[0]
+        end = trace[(trace.index >= aps.index[0]) &
+                    (trace < half_way)].index[0]
+        half_width = end-start
+        return half_width
 
     def find_current_step(
         self,
