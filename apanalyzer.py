@@ -88,8 +88,8 @@ class APAnalyzer:
         rate = self.get_rate(sweep)
 
         # Find action potential segment
-        # 1) time derivative higher than the rate threshold
-        # 2) amplitude higher than the detection threshold
+        # 1) rate higher than the rate threshold
+        # 2) amplitude higher than the trace threshold
         segments = rate[(rate >= self.rate_threshold) & 
                         (trace >= self.trace_threshold)]
 
@@ -197,6 +197,6 @@ class APAnalyzer:
                         (current.index <= end-0.05)]
             )
             # Compute amplitude
-            amplitude = round(stimulus-baseline)//10*10
+            amplitude = round((stimulus-baseline)/10)*10
 
         return amplitude
